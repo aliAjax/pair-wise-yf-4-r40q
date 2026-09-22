@@ -8,10 +8,11 @@ import {
   formatTimestamp,
   getTimeOfDay,
 } from '@/utils/sceneHelpers'
-import { Lightbulb, RefreshCw, Quote, Bus, ArrowRight } from 'lucide-react'
+import { Lightbulb, RefreshCw, Quote, Bus, ArrowRight, AlertTriangle } from 'lucide-react'
 
 export default function InspirePage() {
-  const { randomScene, refreshRandom, loadAll, scenes } = useSceneStore()
+  const { randomScene, refreshRandom, loadAll, scenes, eligibleRoutes, routesWithGaps } =
+    useSceneStore()
   const [revealed, setRevealed] = useState(false)
   const [displayedPrompt, setDisplayedPrompt] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -20,6 +21,14 @@ export default function InspirePage() {
   useEffect(() => {
     loadAll()
   }, [loadAll])
+
+  // 当前展示的记录所属线路重新出现未补缺口时，该记录不再可抽取，收起卡片
+  useEffect(() => {
+    if (randomScene && routesWithGaps.includes(randomScene.routeName)) {
+      useSceneStore.setState({ randomScene: null })
+      setRevealed(false)
+    }
+  }, [randomScene, routesWithGaps])
 
   useEffect(() => {
     if (!revealed || !randomScene) return
@@ -67,6 +76,21 @@ export default function InspirePage() {
     )
   }
 
+  if (eligibleRoutes.length === 0) {
+    return (
+      <div className="min-h-screen bg-teal-950 flex flex-col items-center justify-center px-6 text-center">
+        <AlertTriangle className="w-12 h-12 text-amber-400/70 mb-6" />
+        <p className="text-mist-100 text-lg font-serif mb-2">所有线路都还有漏采缺口</p>
+        <p className="text-mist-400 text-sm mb-1">
+          仍有未补缺口的线路不参与灵感抽取
+        </p>
+        <p className="text-mist-500 text-xs">
+          待补线路：{routesWithGaps.join('、')}，请先到时间线补录
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-teal-950 flex flex-col items-center px-4 py-8">
       {!revealed ? (
@@ -84,6 +108,14 @@ export default function InspirePage() {
             <span className="text-mist-100 font-serif text-lg tracking-wide">采一段窗景</span>
             <span className="text-dusk-400/60 text-xs">点击随机采集</span>
           </button>
+          <p className="mt-6 text-xs text-mist-500">
+            共 {eligibleRoutes.length} 条无缺口线路可参与
+            {routesWithGaps.length > 0 && (
+              <span className="text-amber-400/80">
+                （{routesWithGaps.length} 条因漏采未补已排除）
+              </span>
+            )}
+          </p>
           <style>{`
             @keyframes float {
               0%, 100% { transform: translateY(0); }
