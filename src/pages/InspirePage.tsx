@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { useSceneStore } from '@/store/useSceneStore'
 import {
   WRITING_PROMPTS,
@@ -8,10 +9,10 @@ import {
   formatTimestamp,
   getTimeOfDay,
 } from '@/utils/sceneHelpers'
-import { Lightbulb, RefreshCw, Quote, Bus, ArrowRight } from 'lucide-react'
+import { Lightbulb, RefreshCw, Quote, Bus, ArrowRight, AlertTriangle } from 'lucide-react'
 
 export default function InspirePage() {
-  const { randomScene, refreshRandom, loadAll, scenes } = useSceneStore()
+  const { randomScene, refreshRandom, loadAll, scenes, blockedRoutes } = useSceneStore()
   const [revealed, setRevealed] = useState(false)
   const [displayedPrompt, setDisplayedPrompt] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -57,6 +58,10 @@ export default function InspirePage() {
     }, 400)
   }, [refreshRandom])
 
+  const inspirableCount = scenes.filter(
+    (s) => !blockedRoutes.has(s.routeName)
+  ).length
+
   if (scenes.length === 0) {
     return (
       <div className="min-h-screen bg-teal-950 flex flex-col items-center justify-center px-6 text-center">
@@ -67,8 +72,35 @@ export default function InspirePage() {
     )
   }
 
+  if (inspirableCount === 0) {
+    return (
+      <div className="min-h-screen bg-teal-950 flex flex-col items-center justify-center px-6 text-center">
+        <AlertTriangle className="w-16 h-16 text-amber-400/60 mb-6" />
+        <p className="text-mist-100 text-lg font-serif mb-2">所有线路都存在未补缺口</p>
+        <p className="text-mist-400 text-sm mb-6 max-w-sm">
+          仍有漏采缺口的线路不参与灵感抽取，请先到时间线补录缺口
+        </p>
+        <Link
+          to="/timeline"
+          className="rounded-full bg-dusk-400/15 border border-dusk-400/40 px-6 py-3 text-mist-100 text-sm hover:bg-dusk-400/25 transition-all"
+        >
+          前往时间线补录
+        </Link>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-teal-950 flex flex-col items-center px-4 py-8">
+      {blockedRoutes.size > 0 && (
+        <Link
+          to="/timeline"
+          className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-2 text-xs text-amber-200 hover:bg-amber-400/20 transition-colors"
+        >
+          <AlertTriangle className="w-3.5 h-3.5" />
+          {blockedRoutes.size} 条线路仍有未补缺口，已不参与抽取
+        </Link>
+      )}
       {!revealed ? (
         <div className="flex-1 flex flex-col items-center justify-center">
           <button
